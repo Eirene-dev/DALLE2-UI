@@ -6,15 +6,11 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, QLineEd
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 
-# OpenAI API 설정
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
-    raise ValueError('환경변수 OPENAI_API_KEY가 설정되지 않았습니다.')
 
 # 이미지 생성 함수
-def generate_image(prompt):
+def generate_image(prompt, api_key):
     url = f'https://api.openai.com/v1/images/generations'
-    headers = {'Authorization': f'Bearer {OPENAI_API_KEY}'}
+    headers = {'Authorization': f'Bearer {api_key}'}
     data = {
         'model': 'image-alpha-001',
         'prompt': prompt,
@@ -32,6 +28,13 @@ class Dalle2App(QWidget):
 
     def initUI(self):
         main_layout = QVBoxLayout()
+
+        # API Key QLabel and QLineEdit
+        self.api_key_label = QLabel("OpenAI API Key:", self)
+        self.api_key_input = QLineEdit(self)
+        self.api_key_input.setPlaceholderText("Enter your API key here")
+        main_layout.addWidget(self.api_key_label)
+        main_layout.addWidget(self.api_key_input)
 
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -66,7 +69,13 @@ class Dalle2App(QWidget):
     def generate_and_display_image(self):
         prompt = self.text_edit.toPlainText()
         self.add_prompt_to_history(prompt)
-        image_url = generate_image(prompt)
+        api_key = self.api_key_input.text()
+
+        if not api_key:
+            self.image_label.setText("Please enter your OpenAI API key.")
+            return
+
+        image_url = generate_image(prompt, api_key)
 
         pixmap = QPixmap()
         pixmap.loadFromData(requests.get(image_url).content)
@@ -92,7 +101,9 @@ class Dalle2App(QWidget):
     def load_prompt_from_history(self, item):
         self.text_edit.setPlainText(item.text())
 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Dalle2App()
     sys.exit(app.exec_())
+
